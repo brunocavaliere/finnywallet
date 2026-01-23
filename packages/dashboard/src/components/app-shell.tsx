@@ -1,6 +1,8 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
 
+import { AuthUserMenu } from "@/components/auth-user-menu";
+
 const navItems = [
   { href: "/dashboard", label: "Dashboard" },
   { href: "/assets", label: "Assets" },
@@ -32,8 +34,9 @@ export function AppShell({ children }: AppShellProps) {
           </nav>
         </aside>
         <div className="flex flex-1 flex-col">
-          <header className="border-b border-border bg-white/70 px-8 py-4 text-sm text-muted-foreground">
-            Portfolio control made simple.
+          <header className="flex items-center justify-between gap-4 border-b border-border bg-white/70 px-8 py-4 text-sm text-muted-foreground">
+            <span>Portfolio control made simple.</span>
+            <AuthUserMenu />
           </header>
           <main className="flex-1 bg-white px-8 py-6">{children}</main>
         </div>
