@@ -53,6 +53,9 @@ export async function middleware(request: NextRequest) {
   if (!user && isProtectedRoute) {
     const redirectUrl = request.nextUrl.clone();
     redirectUrl.pathname = "/login";
+    const nextPath = `${pathname}${request.nextUrl.search}`;
+    redirectUrl.searchParams.set("next", nextPath);
+
     const redirectResponse = NextResponse.redirect(redirectUrl);
 
     response.cookies.getAll().forEach((cookie) => {
@@ -65,6 +68,8 @@ export async function middleware(request: NextRequest) {
   if (user && isAuthRoute) {
     const redirectUrl = request.nextUrl.clone();
     redirectUrl.pathname = "/dashboard";
+    redirectUrl.search = "";
+
     const redirectResponse = NextResponse.redirect(redirectUrl);
 
     response.cookies.getAll().forEach((cookie) => {
@@ -78,13 +83,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: [
-    "/dashboard/:path*",
-    "/assets/:path*",
-    "/holdings/:path*",
-    "/targets/:path*",
-    "/rebalance/:path*",
-    "/login",
-    "/signup"
-  ]
+  matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"]
 };
