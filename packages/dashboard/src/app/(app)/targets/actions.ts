@@ -4,7 +4,6 @@ import { revalidatePath } from "next/cache";
 
 import { createTarget, removeTarget } from "@/domains/portfolio/server/targets";
 
-
 type ActionResult = { ok: true } | { ok: false; error: string };
 
 export async function upsertTargetAction(input: {

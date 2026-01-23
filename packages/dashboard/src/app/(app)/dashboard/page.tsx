@@ -1,9 +1,9 @@
 export default function DashboardPage() {
   return (
     <section className="space-y-2">
-      <h1 className="text-2xl font-semibold">Dashboard</h1>
+      <h1 className="text-2xl font-semibold">Painel</h1>
       <p className="text-sm text-muted-foreground">
-        Your portfolio overview will appear here.
+        O resumo da sua carteira vai aparecer aqui.
       </p>
     </section>
   );

@@ -7,6 +7,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { createBrowserClient } from "@/lib/supabase/browserClient";
+import { getAuthErrorMessage } from "@/lib/ui/auth-errors";
 
 const supabase = createBrowserClient();
 
@@ -29,7 +30,7 @@ export default function LoginPage() {
     });
 
     if (error) {
-      setErrorMessage(error.message);
+      setErrorMessage(getAuthErrorMessage(error.message));
       setLoading(false);
       return;
     }
@@ -44,13 +45,13 @@ export default function LoginPage() {
       <div className="space-y-2">
         <h1 className="text-2xl font-semibold">Entrar</h1>
         <p className="text-sm text-muted-foreground">
-          Use seu email e senha para acessar o Finny Wallet.
+          Use seu e-mail e senha para acessar o Finny Wallet.
         </p>
       </div>
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="space-y-2">
           <label className="text-sm font-medium" htmlFor="email">
-            Email
+            E-mail
           </label>
           <Input
             id="email"

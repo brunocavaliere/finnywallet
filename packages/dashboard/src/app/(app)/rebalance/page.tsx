@@ -1,9 +1,9 @@
 export default function RebalancePage() {
   return (
     <section className="space-y-2">
-      <h1 className="text-2xl font-semibold">Rebalance</h1>
+      <h1 className="text-2xl font-semibold">Rebalanceamento</h1>
       <p className="text-sm text-muted-foreground">
-        Review buy and sell suggestions for your portfolio.
+        Revise sugestões de compra e venda para sua carteira.
       </p>
     </section>
   );

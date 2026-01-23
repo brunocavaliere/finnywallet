@@ -1,6 +1,5 @@
 import { listAssets } from "@/domains/portfolio/server/assets";
 import { listTargets } from "@/domains/portfolio/server/targets";
-
 import { TargetsTable } from "./targets-table";
 
 export default async function TargetsPage() {
@@ -8,9 +7,9 @@ export default async function TargetsPage() {
 
   return (
     <section className="space-y-6">
-      <h1 className="text-2xl font-semibold">Targets</h1>
+      <h1 className="text-2xl font-semibold">Metas</h1>
       <p className="text-sm text-muted-foreground">
-        Define your desired allocation percentages.
+        Defina os percentuais desejados de alocação.
       </p>
       <TargetsTable targets={targets} assets={assets} />
     </section>
