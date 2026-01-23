@@ -105,7 +105,7 @@ export function TargetsTable({ targets, assets }: TargetsTableProps) {
       <CardHeader>
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <CardTitle>Targets</CardTitle>
+            <CardTitle>Metas</CardTitle>
             <CardDescription>
               Defina a alocação desejada por ativo.
             </CardDescription>
@@ -133,14 +133,16 @@ export function TargetsTable({ targets, assets }: TargetsTableProps) {
             <TableRow>
               <TableHead>Ticker</TableHead>
               <TableHead>Percentual</TableHead>
-              <TableHead className="w-32 text-right">Ações</TableHead>
+              <TableHead className="w-32 text-right">
+                Ações
+              </TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {targets.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={3} className="text-sm text-muted-foreground">
-                  Nenhuma meta cadastrada.
+                  Nenhuma meta cadastrada ainda.
                 </TableCell>
               </TableRow>
             ) : (

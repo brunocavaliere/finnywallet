@@ -125,7 +125,7 @@ export function AssetsTable({ assets, canSeed }: AssetsTableProps) {
       <CardHeader>
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <CardTitle>Assets</CardTitle>
+            <CardTitle>Ativos</CardTitle>
             <CardDescription>
               Cadastre os ativos que você acompanha.
             </CardDescription>
@@ -154,14 +154,16 @@ export function AssetsTable({ assets, canSeed }: AssetsTableProps) {
             <TableRow>
               <TableHead>Ticker</TableHead>
               <TableHead>Nome</TableHead>
-              <TableHead className="w-32 text-right">Ações</TableHead>
+              <TableHead className="w-32 text-right">
+                Ações
+              </TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {assets.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={3} className="text-sm text-muted-foreground">
-                  Nenhum ativo cadastrado.
+                  Nenhum ativo cadastrado ainda.
                 </TableCell>
               </TableRow>
             ) : (

@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { createBrowserClient } from "@/lib/supabase/browserClient";
+import { getAuthErrorMessage } from "@/lib/ui/auth-errors";
 
 const supabase = createBrowserClient();
 
@@ -28,7 +29,7 @@ export default function SignupPage() {
     });
 
     if (error) {
-      setErrorMessage(error.message);
+      setErrorMessage(getAuthErrorMessage(error.message));
       setLoading(false);
       return;
     }
@@ -47,7 +48,7 @@ export default function SignupPage() {
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="space-y-2">
           <label className="text-sm font-medium" htmlFor="email">
-            Email
+            E-mail
           </label>
           <Input
             id="email"
