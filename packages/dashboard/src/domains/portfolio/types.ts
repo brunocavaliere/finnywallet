@@ -1,0 +1,29 @@
+export type Asset = {
+  id: string;
+  user_id: string;
+  ticker: string;
+  name: string | null;
+  created_at: string;
+};
+
+export type Holding = {
+  id: string;
+  user_id: string;
+  asset_id: string;
+  qty: number | string;
+  created_at: string;
+  updated_at: string;
+};
+
+export type Target = {
+  id: string;
+  user_id: string;
+  asset_id: string;
+  target_percent: number | string;
+  created_at: string;
+  updated_at: string;
+};
+
+export type HoldingWithAsset = Holding & { asset: Asset };
+
+export type TargetWithAsset = Target & { asset: Asset };
