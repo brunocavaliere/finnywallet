@@ -17,8 +17,12 @@ bun install
 Copy the example env file and fill in values as needed:
 
 ```bash
-cp .env.example .env
+cp .env.example .env.local
 ```
+
+Make sure Supabase email confirmations are disabled for password auth:
+
+- Supabase project → Authentication → Providers → Email → **Confirm email** disabled.
 
 ## Development
 
