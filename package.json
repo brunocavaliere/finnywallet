@@ -1,0 +1,14 @@
+{
+  "name": "finnywallet",
+  "private": true,
+  "workspaces": ["packages/*"],
+  "scripts": {
+    "dev": "bun run dev:dashboard & bun run dev:api",
+    "dev:dashboard": "bun run --cwd packages/dashboard dev",
+    "dev:api": "bun run --cwd packages/api dev",
+    "typecheck": "bun run --cwd packages/dashboard typecheck && bun run --cwd packages/api typecheck && bun run --cwd packages/shared typecheck"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.5"
+  }
+}

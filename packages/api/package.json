@@ -1,0 +1,17 @@
+{
+  "name": "@repo/api",
+  "private": true,
+  "version": "0.0.1",
+  "type": "module",
+  "scripts": {
+    "dev": "bun --hot src/index.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "hono": "^4.6.3"
+  },
+  "devDependencies": {
+    "bun-types": "^1.1.29",
+    "typescript": "^5.4.5"
+  }
+}
