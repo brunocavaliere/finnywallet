@@ -66,7 +66,7 @@ export function TargetsTable({ targets, assets }: TargetsTableProps) {
     setError(null);
 
     if (!assetId) {
-      setError("Selecione um ativo.");
+      setError("Selecione uma posição.");
       return;
     }
 
@@ -107,7 +107,7 @@ export function TargetsTable({ targets, assets }: TargetsTableProps) {
           <div>
             <CardTitle>Metas</CardTitle>
             <CardDescription>
-              Defina a alocação desejada por ativo.
+              Defina a alocação desejada por posição.
             </CardDescription>
           </div>
           <Button
@@ -186,13 +186,13 @@ export function TargetsTable({ targets, assets }: TargetsTableProps) {
           <DialogHeader>
             <DialogTitle>Adicionar/Atualizar meta</DialogTitle>
             <DialogDescription>
-              Escolha um ativo e informe o percentual desejado.
+              Escolha uma posição e informe o percentual desejado.
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleSubmit} className="mt-4 space-y-4">
             <div className="space-y-2">
               <label className="text-sm font-medium" htmlFor="asset">
-                Ativo
+                Posição
               </label>
               <Select
                 id="asset"
@@ -201,7 +201,7 @@ export function TargetsTable({ targets, assets }: TargetsTableProps) {
                 disabled={assets.length === 0}
               >
                 {assets.length === 0 ? (
-                  <SelectItem value="">Cadastre um ativo primeiro</SelectItem>
+                  <SelectItem value="">Adicione uma posição primeiro</SelectItem>
                 ) : (
                   assets.map((asset) => (
                     <SelectItem key={asset.id} value={asset.id}>

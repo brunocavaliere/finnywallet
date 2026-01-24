@@ -6,7 +6,6 @@ import { ThemeToggle } from "@/components/theme/theme-toggle";
 
 const navItems = [
   { href: "/dashboard", label: "Painel" },
-  { href: "/assets", label: "Ativos" },
   { href: "/holdings", label: "Posições" },
   { href: "/targets", label: "Metas" },
   { href: "/rebalance", label: "Rebalanceamento" }
