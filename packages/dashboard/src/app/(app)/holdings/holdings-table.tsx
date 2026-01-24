@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 
-import type { Asset, HoldingWithAsset } from "@/domains/portfolio/types";
+import type { HoldingWithAsset } from "@/domains/portfolio/types";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -28,29 +28,35 @@ import {
   DialogTitle
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Select, SelectItem } from "@/components/ui/select";
 
 import { removeHoldingAction, upsertHoldingAction } from "./actions";
 
 interface HoldingsTableProps {
   holdings: HoldingWithAsset[];
-  assets: Asset[];
 }
 
-export function HoldingsTable({ holdings, assets }: HoldingsTableProps) {
+export function HoldingsTable({ holdings }: HoldingsTableProps) {
   const [open, setOpen] = useState(false);
-  const [assetId, setAssetId] = useState(assets[0]?.id ?? "");
+  const [ticker, setTicker] = useState("");
+  const [name, setName] = useState("");
   const [qty, setQty] = useState("0");
   const [error, setError] = useState<string | null>(null);
+  const [editingHolding, setEditingHolding] = useState<HoldingWithAsset | null>(
+    null
+  );
   const [pending, startTransition] = useTransition();
 
   const openForm = (holding?: HoldingWithAsset) => {
     if (holding) {
-      setAssetId(holding.asset_id);
+      setTicker(holding.asset.ticker);
+      setName(holding.asset.name ?? "");
       setQty(String(holding.qty));
+      setEditingHolding(holding);
     } else {
-      setAssetId(assets[0]?.id ?? "");
+      setTicker("");
+      setName("");
       setQty("0");
+      setEditingHolding(null);
     }
     setError(null);
     setOpen(true);
@@ -60,14 +66,15 @@ export function HoldingsTable({ holdings, assets }: HoldingsTableProps) {
     event.preventDefault();
     setError(null);
 
-    if (!assetId) {
-      setError("Selecione um ativo.");
+    if (!ticker.trim()) {
+      setError("Informe o ticker.");
       return;
     }
 
     startTransition(async () => {
       const result = await upsertHoldingAction({
-        asset_id: assetId,
+        ticker,
+        name,
         qty: Number(qty)
       });
 
@@ -100,42 +107,46 @@ export function HoldingsTable({ holdings, assets }: HoldingsTableProps) {
           <div>
             <CardTitle>Posições</CardTitle>
             <CardDescription>
-              Registre a quantidade atual de cada ativo.
+              Acompanhe a quantidade atual de cada posição.
             </CardDescription>
           </div>
           <Button
             type="button"
             onClick={() => openForm()}
-            disabled={pending || assets.length === 0}
+            disabled={pending}
           >
-            Adicionar/Atualizar posição
+            Adicionar posição
           </Button>
         </div>
       </CardHeader>
       <CardContent>
         {error ? <p className="text-sm text-destructive">{error}</p> : null}
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Ticker</TableHead>
-              <TableHead>Quantidade</TableHead>
-              <TableHead className="w-32 text-right">
-                Ações
-              </TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {holdings.length === 0 ? (
+        {holdings.length === 0 ? (
+          <div className="flex flex-col items-start gap-4 rounded-lg border border-dashed border-border p-6 text-sm text-muted-foreground">
+            <p>Sua carteira ainda está vazia.</p>
+            <Button type="button" onClick={() => openForm()} disabled={pending}>
+              Adicionar primeira posição
+            </Button>
+          </div>
+        ) : (
+          <Table>
+            <TableHeader>
               <TableRow>
-                <TableCell colSpan={3} className="text-sm text-muted-foreground">
-                  Nenhuma posição cadastrada ainda.
-                </TableCell>
+                <TableHead>Ativo</TableHead>
+                <TableHead>Quantidade</TableHead>
+                <TableHead className="w-32 text-right">Ações</TableHead>
               </TableRow>
-            ) : (
-              holdings.map((holding) => (
+            </TableHeader>
+            <TableBody>
+              {holdings.map((holding) => (
                 <TableRow key={holding.id}>
-                  <TableCell className="font-medium">
-                    {holding.asset.ticker}
+                  <TableCell>
+                    <div className="font-medium">{holding.asset.ticker}</div>
+                    {holding.asset.name ? (
+                      <div className="text-xs text-muted-foreground">
+                        {holding.asset.name}
+                      </div>
+                    ) : null}
                   </TableCell>
                   <TableCell>{holding.qty}</TableCell>
                   <TableCell className="text-right">
@@ -161,41 +172,46 @@ export function HoldingsTable({ holdings, assets }: HoldingsTableProps) {
                     </div>
                   </TableCell>
                 </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
+              ))}
+            </TableBody>
+          </Table>
+        )}
       </CardContent>
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Adicionar/Atualizar posição</DialogTitle>
+            <DialogTitle>
+              {editingHolding ? "Editar posição" : "Adicionar posição"}
+            </DialogTitle>
             <DialogDescription>
-              Selecione o ativo e informe a quantidade atual.
+              Informe o ticker, o nome (se quiser) e a quantidade atual.
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleSubmit} className="mt-4 space-y-4">
             <div className="space-y-2">
-              <label className="text-sm font-medium" htmlFor="asset">
-                Ativo
+              <label className="text-sm font-medium" htmlFor="ticker">
+                Ticker
               </label>
-              <Select
-                id="asset"
-                value={assetId}
-                onValueChange={setAssetId}
-                disabled={assets.length === 0}
-              >
-                {assets.length === 0 ? (
-                  <SelectItem value="">Cadastre um ativo primeiro</SelectItem>
-                ) : (
-                  assets.map((asset) => (
-                    <SelectItem key={asset.id} value={asset.id}>
-                      {asset.ticker}
-                    </SelectItem>
-                  ))
-                )}
-              </Select>
+              <Input
+                id="ticker"
+                placeholder="Ex: PETR4"
+                value={ticker}
+                onChange={(event) => setTicker(event.target.value)}
+                required
+                disabled={Boolean(editingHolding)}
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium" htmlFor="name">
+                Nome (opcional)
+              </label>
+              <Input
+                id="name"
+                placeholder="Ex: Petrobras"
+                value={name}
+                onChange={(event) => setName(event.target.value)}
+              />
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium" htmlFor="qty">

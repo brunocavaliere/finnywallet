@@ -1,14 +1,24 @@
 import { z } from "zod";
 
-const tickerSchema = z
+export const tickerSchema = z
   .string()
   .trim()
   .min(1, "Ticker é obrigatório")
   .transform((value) => value.toUpperCase());
 
+const assetNameSchema = z.preprocess(
+  (value) => {
+    if (typeof value === "string" && value.trim() === "") {
+      return null;
+    }
+    return value;
+  },
+  z.string().trim().optional().nullable()
+);
+
 export const assetCreateSchema = z.object({
   ticker: tickerSchema,
-  name: z.string().trim().optional().nullable()
+  name: assetNameSchema
 });
 
 export const assetUpdateSchema = assetCreateSchema.extend({
@@ -17,6 +27,12 @@ export const assetUpdateSchema = assetCreateSchema.extend({
 
 export const holdingUpsertSchema = z.object({
   asset_id: z.string().uuid(),
+  qty: z.coerce.number().min(0, "Quantidade deve ser positiva")
+});
+
+export const holdingCreateSchema = z.object({
+  ticker: tickerSchema,
+  name: assetNameSchema,
   qty: z.coerce.number().min(0, "Quantidade deve ser positiva")
 });
 

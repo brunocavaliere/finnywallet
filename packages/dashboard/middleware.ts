@@ -3,7 +3,6 @@ import { createServerClient } from "@supabase/ssr";
 
 const protectedRoutes = [
   "/dashboard",
-  "/assets",
   "/holdings",
   "/targets",
   "/rebalance"
