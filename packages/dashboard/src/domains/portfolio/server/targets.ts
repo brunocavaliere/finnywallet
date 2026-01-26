@@ -44,6 +44,36 @@ export async function createTarget(input: unknown): Promise<Target> {
   return data as Target;
 }
 
+export async function upsertTargets(inputs: unknown): Promise<Target[]> {
+  const payloads = Array.isArray(inputs)
+    ? inputs.map((input) => targetUpsertSchema.parse(input))
+    : [];
+
+  if (payloads.length === 0) {
+    return [];
+  }
+
+  const { supabase, userId } = await getServerUserContext();
+
+  const { data, error } = await supabase
+    .from("targets")
+    .upsert(
+      payloads.map((payload) => ({
+        user_id: userId,
+        asset_id: payload.asset_id,
+        target_percent: payload.target_percent
+      })),
+      { onConflict: "user_id,asset_id" }
+    )
+    .select("*");
+
+  if (error) {
+    throw Object.assign(new Error(error.message), { code: error.code });
+  }
+
+  return (data ?? []) as Target[];
+}
+
 export async function updateTarget(input: unknown): Promise<Target> {
   const payload = targetUpdateSchema.parse(input);
   const { supabase, userId } = await getServerUserContext();

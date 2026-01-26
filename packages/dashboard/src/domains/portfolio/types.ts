@@ -27,3 +27,14 @@ export type Target = {
 export type HoldingWithAsset = Holding & { asset: Asset };
 
 export type TargetWithAsset = Target & { asset: Asset };
+
+export type Quote = {
+  id: string;
+  user_id: string;
+  asset_id: string;
+  price: number | string;
+  as_of: string;
+  updated_at: string;
+};
+
+export type HoldingWithQuote = HoldingWithAsset & { quote: Quote | null };

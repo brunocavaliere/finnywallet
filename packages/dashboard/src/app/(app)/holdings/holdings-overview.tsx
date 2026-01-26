@@ -1,8 +1,14 @@
 import { listHoldings } from "@/domains/portfolio/server/holdings";
+import { listQuotes } from "@/domains/portfolio/server/quotes";
 import { HoldingsTable } from "./holdings-table";
 
 export async function HoldingsOverview() {
-  const holdings = await listHoldings();
+  const [holdings, quotes] = await Promise.all([listHoldings(), listQuotes()]);
+  const quotesByAssetId = new Map(quotes.map((quote) => [quote.asset_id, quote]));
+  const holdingsWithQuotes = holdings.map((holding) => ({
+    ...holding,
+    quote: quotesByAssetId.get(holding.asset_id) ?? null
+  }));
 
   return (
     <section className="space-y-6">
@@ -12,7 +18,7 @@ export async function HoldingsOverview() {
           Aqui está o resumo atual da sua carteira.
         </p>
       </div>
-      <HoldingsTable holdings={holdings} />
+      <HoldingsTable holdings={holdingsWithQuotes} />
     </section>
   );
 }
