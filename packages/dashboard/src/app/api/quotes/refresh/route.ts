@@ -14,8 +14,27 @@ type QuoteResult = {
   symbol?: string;
   regularMarketPrice?: number;
   price?: number;
-  regularMarketTime?: number;
+  regularMarketTime?: number | string;
 };
+
+function resolveAsOf(time: QuoteResult["regularMarketTime"]): string {
+  if (typeof time === "number" && Number.isFinite(time)) {
+    const millis = time > 1_000_000_000_000 ? time : time * 1000;
+    const date = new Date(millis);
+    if (!Number.isNaN(date.getTime())) {
+      return date.toISOString();
+    }
+  }
+
+  if (typeof time === "string" && time.trim() !== "") {
+    const date = new Date(time);
+    if (!Number.isNaN(date.getTime())) {
+      return date.toISOString();
+    }
+  }
+
+  return new Date().toISOString();
+}
 
 export async function POST() {
   try {
@@ -117,15 +136,13 @@ export async function POST() {
         return;
       }
 
-      const asOf = result?.regularMarketTime
-        ? new Date(result.regularMarketTime * 1000).toISOString()
-        : new Date().toISOString();
+      const asOf = resolveAsOf(result?.regularMarketTime);
 
       rows.push({
         user_id: userId,
         asset_id: asset.id,
         price,
-        as_of: asOf
+        as_of: asOf,
       });
     });
 
