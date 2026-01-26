@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useMemo, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 
-import type { HoldingWithAsset } from "@/domains/portfolio/types";
+import type { HoldingWithQuote } from "@/domains/portfolio/types";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -32,21 +33,23 @@ import { Input } from "@/components/ui/input";
 import { removeHoldingAction, upsertHoldingAction } from "./actions";
 
 interface HoldingsTableProps {
-  holdings: HoldingWithAsset[];
+  holdings: HoldingWithQuote[];
 }
 
 export function HoldingsTable({ holdings }: HoldingsTableProps) {
+  const router = useRouter();
   const [open, setOpen] = useState(false);
   const [ticker, setTicker] = useState("");
   const [name, setName] = useState("");
   const [qty, setQty] = useState("0");
   const [error, setError] = useState<string | null>(null);
-  const [editingHolding, setEditingHolding] = useState<HoldingWithAsset | null>(
+  const [editingHolding, setEditingHolding] = useState<HoldingWithQuote | null>(
     null
   );
   const [pending, startTransition] = useTransition();
+  const [refreshPending, startRefreshTransition] = useTransition();
 
-  const openForm = (holding?: HoldingWithAsset) => {
+  const openForm = (holding?: HoldingWithQuote) => {
     if (holding) {
       setTicker(holding.asset.ticker);
       setName(holding.asset.name ?? "");
@@ -87,7 +90,7 @@ export function HoldingsTable({ holdings }: HoldingsTableProps) {
     });
   };
 
-  const handleDelete = (holding: HoldingWithAsset) => {
+  const handleDelete = (holding: HoldingWithQuote) => {
     if (!confirm(`Remover posição de ${holding.asset.ticker}?`)) {
       return;
     }
@@ -96,6 +99,50 @@ export function HoldingsTable({ holdings }: HoldingsTableProps) {
       const result = await removeHoldingAction(holding.id);
       if (!result.ok) {
         setError(result.error);
+      }
+    });
+  };
+
+  const latestUpdatedAt = useMemo(() => {
+    const timestamps = holdings
+      .map((holding) => holding.quote?.updated_at)
+      .filter(Boolean) as string[];
+    if (timestamps.length === 0) {
+      return null;
+    }
+    const maxTimestamp = timestamps.reduce((latest, current) =>
+      latest > current ? latest : current
+    );
+    return new Date(maxTimestamp);
+  }, [holdings]);
+
+  const hasMissingQuotes = holdings.some((holding) => !holding.quote);
+
+  const formatBRL = (value: number) =>
+    new Intl.NumberFormat("pt-BR", {
+      style: "currency",
+      currency: "BRL"
+    }).format(value);
+
+  const formatDateTime = (date: Date) =>
+    new Intl.DateTimeFormat("pt-BR", {
+      dateStyle: "short",
+      timeStyle: "short"
+    }).format(date);
+
+  const handleRefreshQuotes = () => {
+    setError(null);
+    startRefreshTransition(async () => {
+      try {
+        const response = await fetch("/api/quotes/refresh", {
+          method: "POST"
+        });
+        if (!response.ok) {
+          throw new Error("Falha ao atualizar preços.");
+        }
+        router.refresh();
+      } catch {
+        setError("Não foi possível atualizar os preços agora.");
       }
     });
   };
@@ -109,18 +156,39 @@ export function HoldingsTable({ holdings }: HoldingsTableProps) {
             <CardDescription>
               Acompanhe a quantidade atual de cada posição.
             </CardDescription>
+            {latestUpdatedAt ? (
+              <p className="mt-1 text-xs text-muted-foreground">
+                Atualizado em: {formatDateTime(latestUpdatedAt)}
+              </p>
+            ) : null}
           </div>
-          <Button
-            type="button"
-            onClick={() => openForm()}
-            disabled={pending}
-          >
-            Adicionar posição
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={handleRefreshQuotes}
+              disabled={refreshPending || holdings.length === 0}
+            >
+              Atualizar preços
+            </Button>
+            <Button
+              type="button"
+              onClick={() => openForm()}
+              disabled={pending}
+            >
+              Adicionar posição
+            </Button>
+          </div>
         </div>
       </CardHeader>
       <CardContent>
         {error ? <p className="text-sm text-destructive">{error}</p> : null}
+        {hasMissingQuotes ? (
+          <p className="text-sm text-muted-foreground">
+            Alguns ativos ainda não têm preço. Clique em “Atualizar preços” para
+            calcular o valor atualizado.
+          </p>
+        ) : null}
         {holdings.length === 0 ? (
           <div className="flex flex-col items-start gap-4 rounded-lg border border-dashed border-border p-6 text-sm text-muted-foreground">
             <p>Sua carteira ainda está vazia.</p>
@@ -134,6 +202,8 @@ export function HoldingsTable({ holdings }: HoldingsTableProps) {
               <TableRow>
                 <TableHead>Ativo</TableHead>
                 <TableHead>Quantidade</TableHead>
+                <TableHead>Preço</TableHead>
+                <TableHead>Valor</TableHead>
                 <TableHead className="w-32 text-right">Ações</TableHead>
               </TableRow>
             </TableHeader>
@@ -149,6 +219,22 @@ export function HoldingsTable({ holdings }: HoldingsTableProps) {
                     ) : null}
                   </TableCell>
                   <TableCell>{holding.qty}</TableCell>
+                  <TableCell>
+                    {holding.quote ? (
+                      formatBRL(Number(holding.quote.price))
+                    ) : (
+                      <span className="text-muted-foreground">—</span>
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    {holding.quote ? (
+                      formatBRL(
+                        Number(holding.qty) * Number(holding.quote.price)
+                      )
+                    ) : (
+                      <span className="text-muted-foreground">—</span>
+                    )}
+                  </TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-2">
                       <Button

@@ -20,229 +20,207 @@ import {
   TableHeader,
   TableRow
 } from "@/components/ui/table";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle
-} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Select, SelectItem } from "@/components/ui/select";
 
-import { removeTargetAction, upsertTargetAction } from "./actions";
+import { saveTargetsAction } from "./actions";
 
 interface TargetsTableProps {
   targets: TargetWithAsset[];
   assets: Asset[];
 }
 
+type TargetValues = Record<string, string>;
+
 export function TargetsTable({ targets, assets }: TargetsTableProps) {
-  const [open, setOpen] = useState(false);
-  const [assetId, setAssetId] = useState(assets[0]?.id ?? "");
-  const [percent, setPercent] = useState("0");
+  const [values, setValues] = useState<TargetValues>(() => {
+    const initial: TargetValues = {};
+    assets.forEach((asset) => {
+      const existing = targets.find((target) => target.asset_id === asset.id);
+      initial[asset.id] = existing
+        ? Number(existing.target_percent).toFixed(2)
+        : "0";
+    });
+    return initial;
+  });
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
   const total = useMemo(() => {
-    return targets.reduce((sum, target) => sum + Number(target.target_percent), 0);
-  }, [targets]);
-
-  const openForm = (target?: TargetWithAsset) => {
-    if (target) {
-      setAssetId(target.asset_id);
-      setPercent(String(target.target_percent));
-    } else {
-      setAssetId(assets[0]?.id ?? "");
-      setPercent("0");
-    }
-    setError(null);
-    setOpen(true);
-  };
-
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    setError(null);
-
-    if (!assetId) {
-      setError("Selecione uma posição.");
-      return;
-    }
-
-    startTransition(async () => {
-      const result = await upsertTargetAction({
-        asset_id: assetId,
-        target_percent: Number(percent)
-      });
-
-      if (!result.ok) {
-        setError(result.error);
-        return;
-      }
-
-      setOpen(false);
-    });
-  };
-
-  const handleDelete = (target: TargetWithAsset) => {
-    if (!confirm(`Remover meta de ${target.asset.ticker}?`)) {
-      return;
-    }
-
-    startTransition(async () => {
-      const result = await removeTargetAction(target.id);
-      if (!result.ok) {
-        setError(result.error);
-      }
-    });
-  };
+    return assets.reduce((sum, asset) => {
+      const value = Number(values[asset.id] ?? 0);
+      return sum + (Number.isFinite(value) ? value : 0);
+    }, 0);
+  }, [assets, values]);
 
   const isTotalComplete = Math.abs(total - 100) < 0.01;
+  const status = useMemo(() => {
+    if (isTotalComplete) {
+      return { label: "OK", variant: "secondary" as const };
+    }
+    return { label: "Ajustar", variant: "destructive" as const };
+  }, [isTotalComplete]);
+
+  const handleValueChange = (assetId: string, nextValue: string) => {
+    if (nextValue === "") {
+      setValues((current) => ({ ...current, [assetId]: "" }));
+      return;
+    }
+
+    if (!/^\d{0,3}(\.\d{0,2})?$/.test(nextValue)) {
+      return;
+    }
+
+    const numeric = Number(nextValue);
+    if (!Number.isNaN(numeric) && numeric > 100) {
+      return;
+    }
+
+    setValues((current) => ({ ...current, [assetId]: nextValue }));
+  };
+
+  const handleValueBlur = (assetId: string) => {
+    const rawValue = values[assetId];
+    if (rawValue === "") {
+      setValues((current) => ({ ...current, [assetId]: "0" }));
+      return;
+    }
+    const numeric = Number(rawValue);
+    if (!Number.isNaN(numeric)) {
+      setValues((current) => ({
+        ...current,
+        [assetId]: numeric.toFixed(2)
+      }));
+    }
+  };
+
+  const handleEqualDistribution = () => {
+    if (assets.length === 0) {
+      return;
+    }
+
+    const totalPoints = 10000;
+    const base = Math.floor(totalPoints / assets.length);
+    const remainder = totalPoints % assets.length;
+
+    const updated: TargetValues = {};
+    assets.forEach((asset, index) => {
+      const points = base + (index < remainder ? 1 : 0);
+      updated[asset.id] = (points / 100).toFixed(2);
+    });
+
+    setValues(updated);
+  };
+
+  const handleZero = () => {
+    const updated: TargetValues = {};
+    assets.forEach((asset) => {
+      updated[asset.id] = "0";
+    });
+    setValues(updated);
+  };
+
+  const handleSave = () => {
+    setError(null);
+    startTransition(async () => {
+      const payload = assets.map((asset) => ({
+        asset_id: asset.id,
+        target_percent: Number(values[asset.id] ?? 0)
+      }));
+
+      const result = await saveTargetsAction(payload);
+      if (!result.ok) {
+        setError(result.error);
+      }
+    });
+  };
 
   return (
     <Card>
       <CardHeader>
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <CardTitle>Metas</CardTitle>
-            <CardDescription>
-              Defina a alocação desejada por posição.
-            </CardDescription>
-          </div>
-          <Button
-            type="button"
-            onClick={() => openForm()}
-            disabled={pending || assets.length === 0}
-          >
-            Adicionar/Atualizar meta
-          </Button>
-        </div>
+        <CardTitle>Distribuição por ativo</CardTitle>
+        <CardDescription>
+          Ajuste os percentuais para cada posição da sua carteira.
+        </CardDescription>
       </CardHeader>
-      <CardContent>
-        <div className="mb-4 flex items-center gap-2 text-sm">
+      <CardContent className="space-y-4">
+        <div className="flex flex-wrap items-center gap-3 text-sm">
           <span className="text-muted-foreground">Total:</span>
           <span className="font-medium">{total.toFixed(2)}%</span>
-          <Badge variant={isTotalComplete ? "secondary" : "destructive"}>
-            {isTotalComplete ? "100%" : "Ajustar"}
-          </Badge>
+          <Badge variant={status.variant}>{status.label}</Badge>
         </div>
+        {!isTotalComplete ? (
+          <p className="text-sm text-muted-foreground">
+            As metas precisam somar 100% para um rebalanceamento ideal.
+          </p>
+        ) : null}
         {error ? <p className="text-sm text-destructive">{error}</p> : null}
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Ticker</TableHead>
-              <TableHead>Percentual</TableHead>
-              <TableHead className="w-32 text-right">
-                Ações
-              </TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {targets.length === 0 ? (
+        {assets.length === 0 ? (
+          <div className="rounded-lg border border-dashed border-border p-6 text-sm text-muted-foreground">
+            Adicione posições na carteira para definir metas.
+          </div>
+        ) : (
+          <Table>
+            <TableHeader>
               <TableRow>
-                <TableCell colSpan={3} className="text-sm text-muted-foreground">
-                  Nenhuma meta cadastrada ainda.
-                </TableCell>
+                <TableHead>Ativo</TableHead>
+                <TableHead className="w-40">% alvo</TableHead>
               </TableRow>
-            ) : (
-              targets.map((target) => (
-                <TableRow key={target.id}>
-                  <TableCell className="font-medium">
-                    {target.asset.ticker}
+            </TableHeader>
+            <TableBody>
+              {assets.map((asset) => (
+                <TableRow key={asset.id}>
+                  <TableCell>
+                    <div className="font-medium">{asset.ticker}</div>
+                    {asset.name ? (
+                      <div className="text-xs text-muted-foreground">
+                        {asset.name}
+                      </div>
+                    ) : null}
                   </TableCell>
-                  <TableCell>{target.target_percent}%</TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex justify-end gap-2">
-                      <Button
-                        type="button"
-                        variant="secondary"
-                        size="sm"
-                        onClick={() => openForm(target)}
-                        disabled={pending}
-                      >
-                        Editar
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleDelete(target)}
-                        disabled={pending}
-                      >
-                        Remover
-                      </Button>
-                    </div>
+                  <TableCell>
+                    <Input
+                      value={values[asset.id] ?? "0"}
+                      type="number"
+                      min="0"
+                      max="100"
+                      step="0.01"
+                      onChange={(event) =>
+                        handleValueChange(asset.id, event.target.value)
+                      }
+                      onBlur={() => handleValueBlur(asset.id)}
+                    />
                   </TableCell>
                 </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
+              ))}
+            </TableBody>
+          </Table>
+        )}
+        <div className="flex flex-wrap gap-2">
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={handleEqualDistribution}
+            disabled={assets.length === 0 || pending}
+          >
+            Distribuir igualmente
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            onClick={handleZero}
+            disabled={assets.length === 0 || pending}
+          >
+            Zerar tudo
+          </Button>
+          <Button
+            type="button"
+            onClick={handleSave}
+            disabled={assets.length === 0 || pending}
+          >
+            Salvar
+          </Button>
+        </div>
       </CardContent>
-
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Adicionar/Atualizar meta</DialogTitle>
-            <DialogDescription>
-              Escolha uma posição e informe o percentual desejado.
-            </DialogDescription>
-          </DialogHeader>
-          <form onSubmit={handleSubmit} className="mt-4 space-y-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium" htmlFor="asset">
-                Posição
-              </label>
-              <Select
-                id="asset"
-                value={assetId}
-                onValueChange={setAssetId}
-                disabled={assets.length === 0}
-              >
-                {assets.length === 0 ? (
-                  <SelectItem value="">Adicione uma posição primeiro</SelectItem>
-                ) : (
-                  assets.map((asset) => (
-                    <SelectItem key={asset.id} value={asset.id}>
-                      {asset.ticker}
-                    </SelectItem>
-                  ))
-                )}
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium" htmlFor="percent">
-                Percentual (%)
-              </label>
-              <Input
-                id="percent"
-                type="number"
-                min="0"
-                max="100"
-                step="0.01"
-                value={percent}
-                onChange={(event) => setPercent(event.target.value)}
-                required
-              />
-            </div>
-            {error ? <p className="text-sm text-destructive">{error}</p> : null}
-            <DialogFooter>
-              <Button
-                type="button"
-                variant="ghost"
-                onClick={() => setOpen(false)}
-                disabled={pending}
-              >
-                Cancelar
-              </Button>
-              <Button type="submit" disabled={pending}>
-                Salvar
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
     </Card>
   );
 }

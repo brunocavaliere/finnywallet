@@ -2,29 +2,24 @@
 
 import { revalidatePath } from "next/cache";
 
-import { createTarget, removeTarget } from "@/domains/portfolio/server/targets";
+import { upsertTargets } from "@/domains/portfolio/server/targets";
 
 type ActionResult = { ok: true } | { ok: false; error: string };
 
-export async function upsertTargetAction(input: {
+type TargetInput = {
   asset_id: string;
   target_percent: number;
-}): Promise<ActionResult> {
-  try {
-    await createTarget(input);
-    revalidatePath("/targets");
-    return { ok: true };
-  } catch {
-    return { ok: false, error: "Não foi possível salvar a meta." };
-  }
-}
+};
 
-export async function removeTargetAction(id: string): Promise<ActionResult> {
+export async function saveTargetsAction(
+  input: TargetInput[]
+): Promise<ActionResult> {
   try {
-    await removeTarget(id);
+    await upsertTargets(input);
     revalidatePath("/targets");
+    revalidatePath("/rebalance");
     return { ok: true };
   } catch {
-    return { ok: false, error: "Não foi possível remover a meta." };
+    return { ok: false, error: "Não foi possível salvar as metas." };
   }
 }
