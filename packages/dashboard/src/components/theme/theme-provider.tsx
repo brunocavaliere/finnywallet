@@ -3,6 +3,8 @@
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
 
+import { createBrowserClient } from "@/lib/supabase/browserClient";
+
 const STORAGE_KEY = "finny-theme";
 
 type Theme = "light" | "dark";
@@ -29,15 +31,24 @@ function getPreferredTheme(): Theme {
 }
 
 export function ThemeProvider({
-  children
+  children,
+  initialTheme,
+  userId
 }: {
   children: ReactNode;
+  initialTheme?: Theme;
+  userId?: string | null;
 }) {
-  const [theme, setTheme] = useState<Theme>("light");
+  const [theme, setTheme] = useState<Theme>(initialTheme ?? "light");
+  const supabase = useMemo(() => createBrowserClient(), []);
 
   useEffect(() => {
+    if (initialTheme) {
+      setTheme(initialTheme);
+      return;
+    }
     setTheme(getPreferredTheme());
-  }, []);
+  }, [initialTheme]);
 
   useEffect(() => {
     if (typeof window === "undefined") {
@@ -52,6 +63,24 @@ export function ThemeProvider({
     }
     window.localStorage.setItem(STORAGE_KEY, theme);
   }, [theme]);
+
+  useEffect(() => {
+    if (!userId) {
+      return;
+    }
+
+    const syncTheme = async () => {
+      const { error } = await supabase
+        .from("profiles")
+        .upsert({ user_id: userId, theme }, { onConflict: "user_id" });
+
+      if (error) {
+        console.warn("Falha ao salvar tema no perfil.", error);
+      }
+    };
+
+    void syncTheme();
+  }, [theme, userId, supabase]);
 
   const value = useMemo(
     () => ({

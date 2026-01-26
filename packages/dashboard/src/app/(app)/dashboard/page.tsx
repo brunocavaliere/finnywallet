@@ -1,5 +1,5 @@
-import { HoldingsOverview } from "../holdings/holdings-overview";
+import { DashboardOverview } from "./dashboard-overview";
 
 export default async function DashboardPage() {
-  return <HoldingsOverview />;
+  return <DashboardOverview />;
 }
