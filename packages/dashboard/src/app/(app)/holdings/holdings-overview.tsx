@@ -1,13 +1,17 @@
 import { listHoldings } from "@/domains/portfolio/server/holdings";
-import { listQuotes } from "@/domains/portfolio/server/quotes";
+import { listAssetPrices } from "@/domains/portfolio/server/asset-prices";
 import { HoldingsTable } from "./holdings-table";
 
 export async function HoldingsOverview() {
-  const [holdings, quotes] = await Promise.all([listHoldings(), listQuotes()]);
-  const quotesByAssetId = new Map(quotes.map((quote) => [quote.asset_id, quote]));
+  const holdings = await listHoldings();
+  const tickers = holdings.map((holding) => holding.asset.ticker);
+  const prices = await listAssetPrices(tickers);
+  const pricesByTicker = new Map(
+    prices.map((price) => [price.ticker, price])
+  );
   const holdingsWithQuotes = holdings.map((holding) => ({
     ...holding,
-    quote: quotesByAssetId.get(holding.asset_id) ?? null
+    price: pricesByTicker.get(holding.asset.ticker) ?? null
   }));
 
   return (

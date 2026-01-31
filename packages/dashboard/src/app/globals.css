@@ -16,18 +16,169 @@
 }
 
 .dark {
-  --background: 222.2 84% 4.9%;
-  --foreground: 210 40% 98%;
-  --muted: 217.2 32.6% 17.5%;
-  --muted-foreground: 215 20.2% 65.1%;
-  --border: 217.2 32.6% 17.5%;
-  --input: 217.2 32.6% 17.5%;
-  --ring: 212.7 26.8% 83.9%;
-  --primary: 210 40% 98%;
-  --primary-foreground: 222.2 47.4% 11.2%;
+  --background: 240 6% 9%;
+  --foreground: 0 0% 98%;
+  --muted: 240 3.7% 15.9%;
+  --muted-foreground: 240 5% 64.9%;
+  --border: 240 3.7% 15.9%;
+  --input: 240 3.7% 15.9%;
+  --ring: 240 4.9% 83.9%;
+  --primary: 0 0% 98%;
+  --primary-foreground: 240 5.9% 10%;
 }
 
 body {
   @apply bg-background text-foreground antialiased;
   font-feature-settings: "ss01", "ss02", "cv01", "cv02";
+}
+
+/* Remove number input spinners */
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+input[type="number"] {
+  -moz-appearance: textfield;
+}
+
+/* Scrollbar styling */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: hsl(var(--muted-foreground) / 0.35) transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+  background-color: hsl(var(--muted-foreground) / 0.35);
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background-color: hsl(var(--muted-foreground) / 0.5);
+}
+
+@keyframes sheet-in-right {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+@keyframes sheet-out-right {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(100%);
+  }
+}
+
+@keyframes sheet-in-left {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+@keyframes sheet-out-left {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-100%);
+  }
+}
+
+@keyframes sheet-in-top {
+  from {
+    transform: translateY(-100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+@keyframes sheet-out-top {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(-100%);
+  }
+}
+
+@keyframes sheet-in-bottom {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+@keyframes sheet-out-bottom {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(100%);
+  }
+}
+
+.sheet-content[data-state="open"] {
+  animation-duration: 200ms;
+  animation-timing-function: ease-out;
+}
+
+.sheet-content[data-state="closed"] {
+  animation-duration: 150ms;
+  animation-timing-function: ease-in;
+}
+
+.sheet-content[data-state="open"][data-side="right"] {
+  animation-name: sheet-in-right;
+}
+
+.sheet-content[data-state="closed"][data-side="right"] {
+  animation-name: sheet-out-right;
+}
+
+.sheet-content[data-state="open"][data-side="left"] {
+  animation-name: sheet-in-left;
+}
+
+.sheet-content[data-state="closed"][data-side="left"] {
+  animation-name: sheet-out-left;
+}
+
+.sheet-content[data-state="open"][data-side="top"] {
+  animation-name: sheet-in-top;
+}
+
+.sheet-content[data-state="closed"][data-side="top"] {
+  animation-name: sheet-out-top;
+}
+
+.sheet-content[data-state="open"][data-side="bottom"] {
+  animation-name: sheet-in-bottom;
+}
+
+.sheet-content[data-state="closed"][data-side="bottom"] {
+  animation-name: sheet-out-bottom;
 }

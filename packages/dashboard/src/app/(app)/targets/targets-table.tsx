@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState, useTransition } from "react";
+import { toast } from "sonner";
 
 import type { Asset, TargetWithAsset } from "@/domains/portfolio/types";
 import { Badge } from "@/components/ui/badge";
@@ -130,7 +131,9 @@ export function TargetsTable({ targets, assets }: TargetsTableProps) {
       const result = await saveTargetsAction(payload);
       if (!result.ok) {
         setError(result.error);
+        return;
       }
+      toast.success("Metas atualizadas.");
     });
   };
 
@@ -159,41 +162,43 @@ export function TargetsTable({ targets, assets }: TargetsTableProps) {
             Adicione posições na carteira para definir metas.
           </div>
         ) : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Ativo</TableHead>
-                <TableHead className="w-40">% alvo</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {assets.map((asset) => (
-                <TableRow key={asset.id}>
-                  <TableCell>
-                    <div className="font-medium">{asset.ticker}</div>
-                    {asset.name ? (
-                      <div className="text-xs text-muted-foreground">
-                        {asset.name}
-                      </div>
-                    ) : null}
-                  </TableCell>
-                  <TableCell>
-                    <Input
-                      value={values[asset.id] ?? "0"}
-                      type="number"
-                      min="0"
-                      max="100"
-                      step="0.01"
-                      onChange={(event) =>
-                        handleValueChange(asset.id, event.target.value)
-                      }
-                      onBlur={() => handleValueBlur(asset.id)}
-                    />
-                  </TableCell>
+          <div className="rounded-md border border-border/40 bg-background/40">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Ativo</TableHead>
+                  <TableHead className="w-40">% alvo</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {assets.map((asset) => (
+                  <TableRow key={asset.id}>
+                    <TableCell>
+                      <div className="font-medium">{asset.ticker}</div>
+                      {asset.name ? (
+                        <div className="text-xs text-muted-foreground">
+                          {asset.name}
+                        </div>
+                      ) : null}
+                    </TableCell>
+                    <TableCell>
+                      <Input
+                        value={values[asset.id] ?? "0"}
+                        type="number"
+                        min="0"
+                        max="100"
+                        step="0.01"
+                        onChange={(event) =>
+                          handleValueChange(asset.id, event.target.value)
+                        }
+                        onBlur={() => handleValueBlur(asset.id)}
+                      />
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
         )}
         <div className="flex flex-wrap gap-2">
           <Button

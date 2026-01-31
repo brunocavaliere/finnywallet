@@ -1,7 +1,7 @@
 import Link from "next/link";
 
 import { listHoldings } from "@/domains/portfolio/server/holdings";
-import { listQuotes } from "@/domains/portfolio/server/quotes";
+import { listAssetPrices } from "@/domains/portfolio/server/asset-prices";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
@@ -55,11 +55,15 @@ function resolveLatestUpdate(quotes: { as_of: string }[]) {
 }
 
 export async function DashboardOverview() {
-  const [holdings, quotes] = await Promise.all([listHoldings(), listQuotes()]);
-  const quotesByAssetId = new Map(quotes.map((quote) => [quote.asset_id, quote]));
+  const holdings = await listHoldings();
+  const tickers = holdings.map((holding) => holding.asset.ticker);
+  const prices = await listAssetPrices(tickers);
+  const pricesByTicker = new Map(
+    prices.map((price) => [price.ticker, price])
+  );
 
   const holdingsWithValue = holdings.map((holding) => {
-    const quote = quotesByAssetId.get(holding.asset_id);
+    const quote = pricesByTicker.get(holding.asset.ticker);
     const qty = safeNumber(holding.qty);
     const price = safeNumber(quote?.price);
     const value = qty * price;
@@ -80,7 +84,7 @@ export async function DashboardOverview() {
   const pricedPositions = holdingsWithValue.filter(
     (holding) => holding.price > 0
   );
-  const latestUpdate = resolveLatestUpdate(quotes);
+  const latestUpdate = resolveLatestUpdate(prices);
   const topPositions = [...holdingsWithValue]
     .filter((holding) => holding.value > 0)
     .sort((a, b) => b.value - a.value)

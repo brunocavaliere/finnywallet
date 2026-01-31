@@ -1,20 +1,26 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import type { User } from "@supabase/supabase-js";
-import { ChevronDown, LogOut, Moon, User2 } from "lucide-react";
+import { ChevronDown, LogOut, Moon, Sun, User2 } from "lucide-react";
 
 import { createBrowserClient } from "@/lib/supabase/browserClient";
-import { ThemeToggle } from "@/components/theme/theme-toggle";
+import { useTheme } from "@/components/theme/theme-provider";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 const supabase = createBrowserClient();
 
 export function AuthUserMenu() {
   const [user, setUser] = useState<User | null>(null);
   const [displayName, setDisplayName] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const [isOpen, setIsOpen] = useState(false);
-  const containerRef = useRef<HTMLDivElement | null>(null);
+  const { theme, toggleTheme } = useTheme();
 
   useEffect(() => {
     let isMounted = true;
@@ -65,20 +71,6 @@ export function AuthUserMenu() {
     };
   }, []);
 
-  useEffect(() => {
-    if (!isOpen) return;
-
-    const handleClick = (event: MouseEvent) => {
-      if (!containerRef.current) return;
-      if (!containerRef.current.contains(event.target as Node)) {
-        setIsOpen(false);
-      }
-    };
-
-    window.addEventListener("mousedown", handleClick);
-    return () => window.removeEventListener("mousedown", handleClick);
-  }, [isOpen]);
-
   if (loading) {
     return null;
   }
@@ -103,50 +95,52 @@ export function AuthUserMenu() {
   };
 
   return (
-    <div ref={containerRef} className="relative">
-      <button
-        type="button"
-        onClick={() => setIsOpen((prev) => !prev)}
-        className="flex w-full items-center justify-between gap-3 rounded-md px-3 py-2 text-left text-sm text-foreground transition hover:bg-muted"
-      >
-        <div className="min-w-0">
-          <div className="truncate font-medium">{label}</div>
-          {secondary ? (
-            <div className="truncate text-xs text-muted-foreground">
-              {secondary}
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <button
+          type="button"
+          className="flex w-full items-center justify-between gap-3 rounded-md px-3 py-2 text-left text-sm text-foreground transition hover:bg-muted"
+        >
+          <div className="flex min-w-0 items-center gap-3">
+            <User2 className="h-4 w-4 text-muted-foreground" />
+            <div className="min-w-0 group-data-[state=collapsed]/sidebar:hidden">
+              <div className="truncate font-medium">{label}</div>
+              {secondary ? (
+                <div className="truncate text-xs text-muted-foreground">
+                  {secondary}
+                </div>
+              ) : null}
             </div>
-          ) : null}
-        </div>
-        <ChevronDown className="h-4 w-4 text-muted-foreground" />
-      </button>
-
-      {isOpen ? (
-        <div className="absolute bottom-full left-0 right-0 mb-2 rounded-md border border-border bg-background p-1 text-sm shadow-md">
-          <Link
-            href="/profile"
-            className="flex items-center gap-2 rounded-md px-3 py-2 text-muted-foreground transition hover:bg-muted hover:text-foreground"
-            onClick={() => setIsOpen(false)}
-          >
+          </div>
+          <ChevronDown className="h-4 w-4 text-muted-foreground group-data-[state=collapsed]/sidebar:hidden" />
+        </button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="start" className="w-56" side="top">
+        <DropdownMenuItem asChild>
+          <Link href="/profile" className="flex items-center gap-2">
             <User2 className="h-4 w-4" />
             Perfil
           </Link>
-          <div className="flex items-center justify-between gap-2 rounded-md px-3 py-2 text-muted-foreground">
-            <div className="flex items-center gap-2">
-              <Moon className="h-4 w-4" />
-              Tema
-            </div>
-            <ThemeToggle />
-          </div>
-          <button
-            type="button"
-            onClick={handleSignOut}
-            className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-muted-foreground transition hover:bg-muted hover:text-foreground"
-          >
-            <LogOut className="h-4 w-4" />
-            Sair
-          </button>
-        </div>
-      ) : null}
-    </div>
+        </DropdownMenuItem>
+        <DropdownMenuItem
+          onSelect={(event) => {
+            event.preventDefault();
+            toggleTheme();
+          }}
+        >
+          {theme === "dark" ? (
+            <Sun className="mr-2 h-4 w-4" />
+          ) : (
+            <Moon className="mr-2 h-4 w-4" />
+          )}
+          Tema
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem onSelect={handleSignOut}>
+          <LogOut className="mr-2 h-4 w-4" />
+          Sair
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }

@@ -1,5 +1,7 @@
 "use client";
 
+import { Moon, Sun } from "lucide-react";
+
 import { Button } from "@/components/ui/button";
 import { useTheme } from "@/components/theme/theme-provider";
 
@@ -17,7 +19,11 @@ export function ThemeToggle() {
       title="Alternar tema"
       className="h-9 w-9 p-0"
     >
-      <span aria-hidden>{isDark ? "🌙" : "☀️"}</span>
+      {isDark ? (
+        <Moon className="h-4 w-4" aria-hidden />
+      ) : (
+        <Sun className="h-4 w-4" aria-hidden />
+      )}
     </Button>
   );
 }

@@ -15,11 +15,24 @@ export async function saveTargetsAction(
   input: TargetInput[]
 ): Promise<ActionResult> {
   try {
-    await upsertTargets(input);
+    const normalized =
+      Array.isArray(input) && Array.isArray(input[0])
+        ? (input as TargetInput[][]).flat()
+        : input;
+    const rounded = normalized.map((item) => ({
+      ...item,
+      target_percent: Number(Number(item.target_percent).toFixed(2))
+    }));
+    await upsertTargets(rounded);
     revalidatePath("/targets");
     revalidatePath("/rebalance");
     return { ok: true };
-  } catch {
-    return { ok: false, error: "Não foi possível salvar as metas." };
+  } catch (error) {
+    console.error("saveTargetsAction error:", error);
+    const message =
+      error instanceof Error && error.message
+        ? error.message
+        : "Não foi possível salvar as metas.";
+    return { ok: false, error: message };
   }
 }

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme/theme-provider";
+import { Toaster } from "@/components/ui/sonner";
 import { createServerClient } from "@/lib/supabase/serverClient";
 
 export const metadata: Metadata = {
@@ -44,6 +45,7 @@ export default async function RootLayout({
       <body>
         <ThemeProvider initialTheme={initialTheme} userId={user?.id}>
           {children}
+          <Toaster />
         </ThemeProvider>
       </body>
     </html>

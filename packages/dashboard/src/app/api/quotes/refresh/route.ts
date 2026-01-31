@@ -61,35 +61,36 @@ export async function POST() {
       return NextResponse.json({ updated: 0, skipped: true });
     }
 
-    const { data: existingQuotes, error: quotesError } = await supabase
-      .from("quotes")
-      .select("asset_id, updated_at")
-      .eq("user_id", userId);
+    const tickersList = assets.map((asset) => asset.ticker);
+    const { data: existingPrices, error: pricesError } = await supabase
+      .from("asset_prices")
+      .select("ticker, updated_at")
+      .in("ticker", tickersList);
 
-    if (quotesError) {
-      throw quotesError;
+    if (pricesError) {
+      throw pricesError;
     }
 
-    const existingByAsset = new Map(
-      (existingQuotes ?? []).map((quote) => [quote.asset_id, quote.updated_at])
+    const existingByTicker = new Map(
+      (existingPrices ?? []).map((price) => [price.ticker, price.updated_at])
     );
 
-    const missingQuotes = assets.filter(
-      (asset) => !existingByAsset.has(asset.id)
+    const missingPrices = assets.filter(
+      (asset) => !existingByTicker.has(asset.ticker)
     );
 
-    const latestUpdatedAt = (existingQuotes ?? []).reduce<string | null>(
-      (latest, quote) => {
+    const latestUpdatedAt = (existingPrices ?? []).reduce<string | null>(
+      (latest, price) => {
         if (!latest) {
-          return quote.updated_at;
+          return price.updated_at;
         }
-        return latest > quote.updated_at ? latest : quote.updated_at;
+        return latest > price.updated_at ? latest : price.updated_at;
       },
       null
     );
 
     const cacheMinutes = getCacheMinutes();
-    if (missingQuotes.length === 0 && latestUpdatedAt) {
+    if (missingPrices.length === 0 && latestUpdatedAt) {
       const diffMinutes =
         (Date.now() - new Date(latestUpdatedAt).getTime()) / 60000;
       if (diffMinutes < cacheMinutes) {
@@ -97,7 +98,7 @@ export async function POST() {
       }
     }
 
-    const tickers = assets.map((asset) => asset.ticker).join(",");
+    const tickers = tickersList.join(",");
     const url = `${BRAPI_BASE_URL}/${encodeURIComponent(
       tickers
     )}?token=${apiKey}`;
@@ -120,8 +121,7 @@ export async function POST() {
     );
 
     const rows = [] as {
-      user_id: string;
-      asset_id: string;
+      ticker: string;
       price: number;
       as_of: string;
     }[];
@@ -139,17 +139,16 @@ export async function POST() {
       const asOf = resolveAsOf(result?.regularMarketTime);
 
       rows.push({
-        user_id: userId,
-        asset_id: asset.id,
+        ticker: asset.ticker,
         price,
-        as_of: asOf,
+        as_of: asOf
       });
     });
 
     if (rows.length > 0) {
       const { error: upsertError } = await supabase
-        .from("quotes")
-        .upsert(rows, { onConflict: "user_id,asset_id" });
+        .from("asset_prices")
+        .upsert(rows, { onConflict: "ticker" });
 
       if (upsertError) {
         throw upsertError;

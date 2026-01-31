@@ -1,5 +1,5 @@
-import { DashboardOverview } from "./dashboard-overview";
+import { RebalanceView } from "../rebalance/rebalance-view";
 
 export default async function DashboardPage() {
-  return <DashboardOverview />;
+  return <RebalanceView />;
 }

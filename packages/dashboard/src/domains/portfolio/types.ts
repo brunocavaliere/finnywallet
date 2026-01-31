@@ -37,4 +37,11 @@ export type Quote = {
   updated_at: string;
 };
 
-export type HoldingWithQuote = HoldingWithAsset & { quote: Quote | null };
+export type AssetPrice = {
+  ticker: string;
+  price: number | string;
+  as_of: string;
+  updated_at: string;
+};
+
+export type HoldingWithPrice = HoldingWithAsset & { price: AssetPrice | null };

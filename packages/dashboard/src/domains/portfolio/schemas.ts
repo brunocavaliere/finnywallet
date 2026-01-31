@@ -48,10 +48,7 @@ export const targetUpsertSchema = z.object({
     .number()
     .min(0, "Percentual mínimo é 0")
     .max(100, "Percentual máximo é 100")
-    .refine(
-      (value) => Math.round(value * 100) === value * 100,
-      "Use no máximo 2 casas decimais"
-    )
+    .transform((value) => Number(value.toFixed(2)))
 });
 
 export const targetUpdateSchema = z.object({
@@ -61,8 +58,5 @@ export const targetUpdateSchema = z.object({
     .number()
     .min(0, "Percentual mínimo é 0")
     .max(100, "Percentual máximo é 100")
-    .refine(
-      (value) => Math.round(value * 100) === value * 100,
-      "Use no máximo 2 casas decimais"
-    )
+    .transform((value) => Number(value.toFixed(2)))
 });
