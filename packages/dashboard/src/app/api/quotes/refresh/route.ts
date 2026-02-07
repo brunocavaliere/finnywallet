@@ -50,7 +50,7 @@ export async function POST() {
 
     const { data: assets, error: assetsError } = await supabase
       .from("assets")
-      .select("id, ticker")
+      .select("id, ticker, asset_class")
       .eq("user_id", userId);
 
     if (assetsError) {
@@ -61,7 +61,17 @@ export async function POST() {
       return NextResponse.json({ updated: 0, skipped: true });
     }
 
-    const tickersList = assets.map((asset) => asset.ticker);
+    const b3Assets = assets.filter(
+      (asset) =>
+        !asset.ticker.startsWith("TD:") &&
+        asset.asset_class !== "tesouro" &&
+        asset.asset_class !== "renda_fixa"
+    );
+    if (b3Assets.length === 0) {
+      return NextResponse.json({ updated: 0, skipped: true });
+    }
+
+    const tickersList = b3Assets.map((asset) => asset.ticker);
     const { data: existingPrices, error: pricesError } = await supabase
       .from("asset_prices")
       .select("ticker, updated_at")
@@ -75,7 +85,7 @@ export async function POST() {
       (existingPrices ?? []).map((price) => [price.ticker, price.updated_at])
     );
 
-    const missingPrices = assets.filter(
+    const missingPrices = b3Assets.filter(
       (asset) => !existingByTicker.has(asset.ticker)
     );
 
@@ -127,7 +137,7 @@ export async function POST() {
     }[];
     const errors: string[] = [];
 
-    assets.forEach((asset) => {
+    b3Assets.forEach((asset) => {
       const result = quotesBySymbol.get(asset.ticker);
       const price = result?.regularMarketPrice ?? result?.price;
       if (!price || Number.isNaN(price)) {

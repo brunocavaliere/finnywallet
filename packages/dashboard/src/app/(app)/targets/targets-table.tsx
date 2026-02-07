@@ -22,8 +22,19 @@ import {
   TableRow
 } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger
+} from "@/components/ui/accordion";
 
 import { saveTargetsAction } from "./actions";
+import {
+  ASSET_CLASS_LABELS,
+  ASSET_CLASS_ORDER,
+  type AssetClass
+} from "../rebalance/utils";
 
 interface TargetsTableProps {
   targets: TargetWithAsset[];
@@ -33,6 +44,23 @@ interface TargetsTableProps {
 type TargetValues = Record<string, string>;
 
 export function TargetsTable({ targets, assets }: TargetsTableProps) {
+  const groupedAssets = useMemo(() => {
+    const sections = new Map<AssetClass, Asset[]>();
+    ASSET_CLASS_ORDER.forEach((key) => sections.set(key, []));
+
+    assets.forEach((asset) => {
+      const klass = (asset.asset_class as AssetClass | null) ?? "acoes";
+      const list = sections.get(klass) ?? [];
+      list.push(asset);
+      sections.set(klass, list);
+    });
+
+    return ASSET_CLASS_ORDER.map((klass) => ({
+      key: klass,
+      label: ASSET_CLASS_LABELS[klass],
+      assets: sections.get(klass) ?? []
+    })).filter((section) => section.assets.length > 0);
+  }, [assets]);
   const [values, setValues] = useState<TargetValues>(() => {
     const initial: TargetValues = {};
     assets.forEach((asset) => {
@@ -138,14 +166,14 @@ export function TargetsTable({ targets, assets }: TargetsTableProps) {
   };
 
   return (
-    <Card>
+    <Card className="flex h-full flex-col">
       <CardHeader>
         <CardTitle>Distribuição por ativo</CardTitle>
         <CardDescription>
           Ajuste os percentuais para cada posição da sua carteira.
         </CardDescription>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="flex min-h-0 flex-1 flex-col gap-4">
         <div className="flex flex-wrap items-center gap-3 text-sm">
           <span className="text-muted-foreground">Total:</span>
           <span className="font-medium">{total.toFixed(2)}%</span>
@@ -157,49 +185,70 @@ export function TargetsTable({ targets, assets }: TargetsTableProps) {
           </p>
         ) : null}
         {error ? <p className="text-sm text-destructive">{error}</p> : null}
-        {assets.length === 0 ? (
-          <div className="rounded-lg border border-dashed border-border p-6 text-sm text-muted-foreground">
-            Adicione posições na carteira para definir metas.
-          </div>
-        ) : (
-          <div className="rounded-md border border-border/40 bg-background/40">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Ativo</TableHead>
-                  <TableHead className="w-40">% alvo</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {assets.map((asset) => (
-                  <TableRow key={asset.id}>
-                    <TableCell>
-                      <div className="font-medium">{asset.ticker}</div>
-                      {asset.name ? (
-                        <div className="text-xs text-muted-foreground">
-                          {asset.name}
-                        </div>
-                      ) : null}
-                    </TableCell>
-                    <TableCell>
-                      <Input
-                        value={values[asset.id] ?? "0"}
-                        type="number"
-                        min="0"
-                        max="100"
-                        step="0.01"
-                        onChange={(event) =>
-                          handleValueChange(asset.id, event.target.value)
-                        }
-                        onBlur={() => handleValueBlur(asset.id)}
-                      />
-                    </TableCell>
-                  </TableRow>
+        <div className="flex min-h-0 flex-1 flex-col gap-3">
+          {assets.length === 0 ? (
+            <div className="rounded-lg border border-dashed border-border p-6 text-sm text-muted-foreground">
+              Adicione posições na carteira para definir metas.
+            </div>
+          ) : (
+            <div className="min-h-0 flex-1 overflow-auto rounded-md border border-border/40 bg-background/40">
+              <Accordion
+                type="multiple"
+                defaultValue={groupedAssets.map((section) => section.key)}
+              >
+                {groupedAssets.map((section) => (
+                  <AccordionItem key={section.key} value={section.key}>
+                    <AccordionTrigger className="px-4">
+                      <div className="flex w-full items-center justify-between text-sm">
+                        <span className="font-medium">{section.label}</span>
+                        <span className="text-xs text-muted-foreground">
+                          {section.assets.length} ativo(s)
+                        </span>
+                      </div>
+                    </AccordionTrigger>
+                    <AccordionContent className="pb-4 pt-2">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Ativo</TableHead>
+                            <TableHead className="w-40">% alvo</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {section.assets.map((asset) => (
+                            <TableRow key={asset.id}>
+                              <TableCell>
+                                <div className="font-medium">{asset.ticker}</div>
+                                {asset.name ? (
+                                  <div className="text-xs text-muted-foreground">
+                                    {asset.name}
+                                  </div>
+                                ) : null}
+                              </TableCell>
+                              <TableCell>
+                                <Input
+                                  value={values[asset.id] ?? "0"}
+                                  type="number"
+                                  min="0"
+                                  max="100"
+                                  step="0.01"
+                                  onChange={(event) =>
+                                    handleValueChange(asset.id, event.target.value)
+                                  }
+                                  onBlur={() => handleValueBlur(asset.id)}
+                                />
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </AccordionContent>
+                  </AccordionItem>
                 ))}
-              </TableBody>
-            </Table>
-          </div>
-        )}
+              </Accordion>
+            </div>
+          )}
+        </div>
         <div className="flex flex-wrap gap-2">
           <Button
             type="button"

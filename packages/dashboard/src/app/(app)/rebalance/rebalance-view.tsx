@@ -1,22 +1,27 @@
 import { listHoldings } from "@/domains/portfolio/server/holdings";
 import { listAssetPrices } from "@/domains/portfolio/server/asset-prices";
 import { listTargets } from "@/domains/portfolio/server/targets";
+import { listTreasuryPricesByTickers } from "@/domains/portfolio/server/treasury";
 
-import { RebalanceClient } from "./rebalance-client";
+import { RebalanceScreen } from "./rebalance-screen";
 
 export async function RebalanceView() {
   const [holdings, targets] = await Promise.all([
     listHoldings(),
-    listTargets()
+    listTargets(),
   ]);
   const tickers = holdings.map((holding) => holding.asset.ticker);
-  const prices = await listAssetPrices(tickers);
-  const pricesByTicker = new Map(
-    prices.map((price) => [price.ticker, price])
+  const prices = await listAssetPrices(
+    tickers.filter((ticker) => !ticker.startsWith("TD:"))
   );
+  const pricesByTicker = new Map(prices.map((price) => [price.ticker, price]));
+  const treasuryPrices = await listTreasuryPricesByTickers(tickers);
   const holdingsWithPrices = holdings.map((holding) => ({
     ...holding,
-    price: pricesByTicker.get(holding.asset.ticker) ?? null
+    price:
+      pricesByTicker.get(holding.asset.ticker) ??
+      treasuryPrices.get(holding.asset.ticker) ??
+      null,
   }));
 
   return (
@@ -28,7 +33,7 @@ export async function RebalanceView() {
         </p>
       </div>
       <div className="min-h-0 flex-1">
-        <RebalanceClient holdings={holdingsWithPrices} targets={targets} />
+        <RebalanceScreen holdings={holdingsWithPrices} targets={targets} />
       </div>
     </section>
   );

@@ -16,9 +16,15 @@ const assetNameSchema = z.preprocess(
   z.string().trim().optional().nullable()
 );
 
+const assetClassSchema = z
+  .enum(["acoes", "fiis", "etfs", "tesouro", "renda_fixa"])
+  .optional()
+  .nullable();
+
 export const assetCreateSchema = z.object({
   ticker: tickerSchema,
-  name: assetNameSchema
+  name: assetNameSchema,
+  asset_class: assetClassSchema
 });
 
 export const assetUpdateSchema = assetCreateSchema.extend({
@@ -33,6 +39,7 @@ export const holdingUpsertSchema = z.object({
 export const holdingCreateSchema = z.object({
   ticker: tickerSchema,
   name: assetNameSchema,
+  asset_class: assetClassSchema,
   qty: z.coerce.number().min(0, "Quantidade deve ser positiva")
 });
 

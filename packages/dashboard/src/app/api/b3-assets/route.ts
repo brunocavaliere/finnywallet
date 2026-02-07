@@ -32,5 +32,9 @@ export async function GET(request: Request) {
     );
   }
 
-  return NextResponse.json({ items: data ?? [] });
+  const items = (data ?? []).filter((item) =>
+    /^[A-Z]{4,6}\d{1,2}$/.test(item.ticker)
+  );
+
+  return NextResponse.json({ items });
 }

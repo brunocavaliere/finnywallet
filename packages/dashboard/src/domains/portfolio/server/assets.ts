@@ -1,8 +1,37 @@
 import "server-only";
 
-import { assetCreateSchema, assetUpdateSchema, tickerSchema } from "@/domains/portfolio/schemas";
+import {
+  assetCreateSchema,
+  assetUpdateSchema,
+  tickerSchema
+} from "@/domains/portfolio/schemas";
 import type { Asset } from "@/domains/portfolio/types";
 import { getServerUserContext } from "@/domains/portfolio/server/session";
+
+function inferAssetClass(params: {
+  assetClass: string | null;
+  ticker: string;
+  b3Category?: string | null;
+}) {
+  const { assetClass, ticker, b3Category } = params;
+  if (assetClass) {
+    return assetClass;
+  }
+  if (ticker.startsWith("TD:")) {
+    return "tesouro";
+  }
+  const category = b3Category?.toUpperCase() ?? "";
+  if (category.includes("FII") || category.includes("FUND")) {
+    return "fiis";
+  }
+  if (category.startsWith("ETF")) {
+    return "etfs";
+  }
+  if (category === "SHARES" || category === "BDR" || category === "UNIT") {
+    return "acoes";
+  }
+  return null;
+}
 
 export async function listAssets(): Promise<Asset[]> {
   const { supabase, userId } = await getServerUserContext();
@@ -29,7 +58,8 @@ export async function createAsset(input: unknown): Promise<Asset> {
     .insert({
       user_id: userId,
       ticker: payload.ticker,
-      name: payload.name ?? null
+      name: payload.name ?? null,
+      asset_class: payload.asset_class ?? null
     })
     .select("*")
     .single();
@@ -62,6 +92,29 @@ export async function findAssetByTicker(ticker: string): Promise<Asset | null> {
 export async function getOrCreateAsset(input: unknown): Promise<Asset> {
   const payload = assetCreateSchema.parse(input);
   const { supabase, userId } = await getServerUserContext();
+  let resolvedName = payload.name ?? null;
+  let resolvedClass = payload.asset_class ?? null;
+  let b3Category: string | null = null;
+
+  if (!resolvedName) {
+    const { data: b3Assets } = await supabase
+      .from("b3_assets")
+      .select("ticker, name, category")
+      .ilike("ticker", `${payload.ticker}%`)
+      .limit(5);
+
+    const match = (b3Assets ?? []).find((asset) =>
+      new RegExp(`^${payload.ticker}$`, "i").test(asset.ticker)
+    );
+    resolvedName = (match?.name as string | null) ?? null;
+    b3Category = (match?.category as string | null) ?? null;
+  }
+
+  resolvedClass = inferAssetClass({
+    assetClass: resolvedClass,
+    ticker: payload.ticker,
+    b3Category
+  });
 
   const { data: existing, error: existingError } = await supabase
     .from("assets")
@@ -77,10 +130,16 @@ export async function getOrCreateAsset(input: unknown): Promise<Asset> {
   }
 
   if (existing) {
-    if (payload.name && payload.name !== existing.name) {
+    if (
+      (resolvedName && resolvedName !== existing.name) ||
+      (resolvedClass && resolvedClass !== existing.asset_class)
+    ) {
       const { data: updated, error: updateError } = await supabase
         .from("assets")
-        .update({ name: payload.name })
+        .update({
+          name: resolvedName,
+          asset_class: resolvedClass ?? existing.asset_class
+        })
         .eq("id", existing.id)
         .eq("user_id", userId)
         .select("*")
@@ -98,7 +157,11 @@ export async function getOrCreateAsset(input: unknown): Promise<Asset> {
     return existing as Asset;
   }
 
-  return createAsset(payload);
+  return createAsset({
+    ...payload,
+    name: resolvedName,
+    asset_class: resolvedClass
+  });
 }
 
 export async function updateAsset(input: unknown): Promise<Asset> {
@@ -109,7 +172,8 @@ export async function updateAsset(input: unknown): Promise<Asset> {
     .from("assets")
     .update({
       ticker: payload.ticker,
-      name: payload.name ?? null
+      name: payload.name ?? null,
+      asset_class: payload.asset_class ?? null
     })
     .eq("id", payload.id)
     .eq("user_id", userId)

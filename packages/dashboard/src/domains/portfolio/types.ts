@@ -3,6 +3,7 @@ export type Asset = {
   user_id: string;
   ticker: string;
   name: string | null;
+  asset_class: "acoes" | "fiis" | "etfs" | "tesouro" | "renda_fixa" | null;
   created_at: string;
 };
 

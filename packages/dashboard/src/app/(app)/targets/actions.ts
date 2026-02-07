@@ -2,7 +2,10 @@
 
 import { revalidatePath } from "next/cache";
 
-import { upsertTargets } from "@/domains/portfolio/server/targets";
+import {
+  removeTargetsNotIn,
+  upsertTargets
+} from "@/domains/portfolio/server/targets";
 
 type ActionResult = { ok: true } | { ok: false; error: string };
 
@@ -23,6 +26,8 @@ export async function saveTargetsAction(
       ...item,
       target_percent: Number(Number(item.target_percent).toFixed(2))
     }));
+    const assetIds = rounded.map((target) => target.asset_id);
+    await removeTargetsNotIn(assetIds);
     await upsertTargets(rounded);
     revalidatePath("/targets");
     revalidatePath("/rebalance");

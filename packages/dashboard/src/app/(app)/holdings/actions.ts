@@ -17,6 +17,7 @@ type ActionResult = { ok: true } | { ok: false; error: string };
 export async function upsertHoldingAction(input: {
   ticker: string;
   name?: string | null;
+  asset_class?: "acoes" | "fiis" | "etfs" | "tesouro" | "renda_fixa" | null;
   qty: number;
 }): Promise<ActionResult> {
   try {
@@ -26,7 +27,8 @@ export async function upsertHoldingAction(input: {
         ? await findAssetByTicker(payload.ticker)
         : await getOrCreateAsset({
             ticker: payload.ticker,
-            name: payload.name
+            name: payload.name,
+            asset_class: payload.asset_class
           });
 
     if (payload.qty === 0) {

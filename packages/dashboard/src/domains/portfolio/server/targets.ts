@@ -74,6 +74,34 @@ export async function upsertTargets(inputs: unknown): Promise<Target[]> {
   return (data ?? []) as Target[];
 }
 
+export async function removeTargetsNotIn(assetIds: string[]) {
+  const { supabase, userId } = await getServerUserContext();
+
+  if (assetIds.length === 0) {
+    const { error } = await supabase
+      .from("targets")
+      .delete()
+      .eq("user_id", userId);
+
+    if (error) {
+      throw Object.assign(new Error(error.message), { code: error.code });
+    }
+
+    return;
+  }
+
+  const quoted = assetIds.map((id) => `"${id}"`).join(",");
+  const { error } = await supabase
+    .from("targets")
+    .delete()
+    .eq("user_id", userId)
+    .not("asset_id", "in", `(${quoted})`);
+
+  if (error) {
+    throw Object.assign(new Error(error.message), { code: error.code });
+  }
+}
+
 export async function updateTarget(input: unknown): Promise<Target> {
   const payload = targetUpdateSchema.parse(input);
   const { supabase, userId } = await getServerUserContext();
