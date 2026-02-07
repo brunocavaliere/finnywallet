@@ -30,7 +30,6 @@ export async function saveTargetsAction(
     await removeTargetsNotIn(assetIds);
     await upsertTargets(rounded);
     revalidatePath("/targets");
-    revalidatePath("/rebalance");
     return { ok: true };
   } catch (error) {
     console.error("saveTargetsAction error:", error);

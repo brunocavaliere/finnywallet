@@ -56,10 +56,8 @@ API (`packages/api/.env` ou variaveis exportadas)
 Dashboard (paginas)
 - `/` landing.
 - `/login`, `/signup` autenticacao.
-- `/dashboard` visao geral da carteira.
-- `/holdings` posicoes.
+- `/dashboard` visao geral das posiçoes da carteira e input de rebalanceamento.
 - `/targets` metas de alocacao.
-- `/rebalance` rebalanceamento.
 - `/profile` preferencias do usuario.
 
 Dashboard (API interna do Next)

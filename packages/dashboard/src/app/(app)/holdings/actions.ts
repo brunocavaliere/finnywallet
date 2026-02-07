@@ -38,7 +38,6 @@ export async function upsertHoldingAction(input: {
     } else if (asset) {
       await createHolding({ asset_id: asset.id, qty: payload.qty });
     }
-    revalidatePath("/holdings");
     revalidatePath("/dashboard");
     return { ok: true };
   } catch {
@@ -49,7 +48,6 @@ export async function upsertHoldingAction(input: {
 export async function removeHoldingAction(id: string): Promise<ActionResult> {
   try {
     await removeHolding(id);
-    revalidatePath("/holdings");
     revalidatePath("/dashboard");
     return { ok: true };
   } catch {
